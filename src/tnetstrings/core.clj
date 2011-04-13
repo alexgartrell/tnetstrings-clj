@@ -4,6 +4,7 @@
 ;;;; Provides loads and dumps for conversion to and from typed netstrings
 ;;;; More on typed netstrings at http://www.tnetstrings.org
 
+;;; Helper functions for loads
 (defn- explode-tnetstring [s]
   (let [[len-str data-plus] (.split s ":" 2)
         len (Integer. len-str)
@@ -16,6 +17,17 @@
 ;; prototyping for the benefit of load-list and load-map
 (defn- load-item [data type] nil)
 
+(defn- load-str [data]
+  data)
+
+(defn- load-int [data]
+  (Integer. data))
+
+(defn- load-bool [data]
+  (cond (= data "true") true
+        (= data "false") false
+        :else :UNMATCHED))
+
 (defn- load-list [data]
   (loop [data data accum []]
     (if (str/blank? data)
@@ -26,7 +38,7 @@
           :NOTMATCHED
           (recur remains (cons (load-item data type) accum)))))))
 
-(defn- load-dict [data]
+(defn- load-map [data]
   (loop [data data accum {}]
     (if (str/blank? data)
       accum
@@ -40,27 +52,28 @@
     
 (defn- load-item [data type]
   (let [tis (fn [t] (= type t))] ; Abbreviating (= type t) to (tis t)
-    (cond (tis \,) data              ; String
-          (tis \#) (Integer. data)   ; Integer
-          (tis \!) (= data "true")   ; Boolean
-          (tis \~) nil               ; Null
-          (tis \}) (load-dict data) ; Dictionary
-          (tis \]) (load-list data) ; List
+    (cond (tis \~) nil               ; Null
+          (tis \,) (load-str data)   ; String
+          (tis \#) (load-int data)   ; Integer
+          (tis \!) (load-bool data)  ; Boolean
+          (tis \]) (load-list data)  ; List
+          (tis \}) (load-map data)   ; Map
           :else :NOTMATCHED)))
 
-(defn loads [s]
-  (let [[data type remains] (explode-tnetstring s)]
-    (load-item data type)))
+;;; Helper functions for dumps
 
 ;; prototyping for the benefit of dump-list and dump-map
 (defn dump-item [item] nil)
 
-(defn- dump-string [s]
+(defn- dump-str [s]
   (str (.length s) \: s \,))
 
-(defn- dump-integer [x]
+(defn- dump-int [x]
   (let [s (str x)]
     (str (.length s) \: s \#)))
+
+(defn- dump-bool [b]
+  (if b "4:true!" "5:false!"))
 
 (defn- dump-list [lst]
   (loop [lst lst accum ""]
@@ -76,13 +89,22 @@
         (recur (rest ks)
                (str accum (dump-item k) (dump-item v)))))))
 
+(defn- boolean? [x] (or (= true x) (= false x)))
+
 (defn- dump-item [item]
-  (cond (nil? item) "0:~"
-        (list? item) (dump-list item)
-        (map? item) (dump-map item)
-        (string? item) (dump-string item)
-        (integer? item) (dump-integer item)
+  (cond (nil? item) "0:~"                   ; Null
+        (string? item) (dump-str item)      ; String
+        (integer? item) (dump-int item)     ; Integer
+        (boolean? item) (dump-bool item)    ; Boolean
+        (list? item) (dump-list item)       ; List
+        (map? item) (dump-map item)         ; Map
         :else :NOTMATCHED))
+
+
+;;; Public Functions
+(defn loads [s]
+  (let [[data type remains] (explode-tnetstring s)]
+    (load-item data type)))
 
 (defn dumps [data]
      (dump-item data))
