@@ -2,22 +2,40 @@
   (:use tnetstrings.core clojure.test))
 
 (deftest simple-loads
-  (is (= 1337 (loads "4:1337#")))
-  (is (= "1337" (loads "4:1337,")))
-  (is (nil? (loads "0:~")))
-  (is (= (list) (loads "0:]")))
-  (is (= (list 1 2 3 4 5) (loads "20:1:1#1:2#1:3#1:4#1:5#]")))
-  (is (= {} (loads "0:}")))
-  (is (= {"foo" "bar" "biz" "bang"} (loads "25:3:foo,3:bar,3:biz,4:bang,}"))))
+  (testing "with nil"
+    (is (nil? (loads "0:~"))))
+  (testing "with strings"
+    (is (= "1337" (loads "4:1337,"))))
+  (testing "with integers"
+    (is (= 1337 (loads "4:1337#"))))
+  (testing "with booleans"
+    (is (= true (loads "4:true!")))
+    (is (= false (loads "5:false!"))))
+  (testing "with lists"
+    (is (= (list) (loads "0:]")))
+    (is (= (list 1 2 3 4 5) (loads "20:1:1#1:2#1:3#1:4#1:5#]"))))
+  (testing "with maps"
+    (is (= {} (loads "0:}")))
+    (is (= {"foo" "bar" "biz" "bang"}
+           (loads "25:3:foo,3:bar,3:biz,4:bang,}")))))
 
 (deftest simple-dumps
-  (is (= "4:1337#" (dumps 1337)))
-  (is (= "4:1337," (dumps "1337")))
-  (is (= "0:~" (dumps nil)))
-  (is (= "0:]" (dumps (list))))
-  (is (= "20:1:1#1:2#1:3#1:4#1:5#]" (dumps (list 1 2 3 4 5))))
-  (is (= "0:}" (dumps {})))
-  (is (= "25:3:foo,3:bar,3:biz,4:bang,}" (dumps {"foo" "bar" "biz" "bang"}))))
+  (testing "with nil"
+    (is (= "0:~" (dumps nil))))
+  (testing "with strings"
+    (is (= "4:1337," (dumps "1337"))))
+  (testing "with integers"
+    (is (= "4:1337#" (dumps 1337))))
+  (testing "with booleans"
+    (is (= "4:true!" (dumps true)))
+    (is (= "5:false!" (dumps false))))
+  (testing "with lists"
+    (is (= "0:]" (dumps (list))))
+    (is (= "20:1:1#1:2#1:3#1:4#1:5#]" (dumps (list 1 2 3 4 5)))))
+  (testing "with maps"
+    (is (= "0:}" (dumps {})))
+    (is (= "25:3:foo,3:bar,3:biz,4:bang,}"
+           (dumps {"foo" "bar" "biz" "bang"})))))
 
 (defn roundtrip-item [item]
   (is (= item (loads (dumps item)))))
