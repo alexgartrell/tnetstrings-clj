@@ -26,7 +26,7 @@
 (defn- load-bool [data]
   (cond (= data "true") true
         (= data "false") false
-        :else :UNMATCHED))
+        :else :NOTMATCHED))
 
 (defn- load-list [data]
   (loop [data data accum []]
