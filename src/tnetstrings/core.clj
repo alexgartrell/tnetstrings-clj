@@ -6,13 +6,23 @@
 
 ;;; Helper functions for loads
 (defn- explode-tnetstring [s]
-  (let [[len-str data-plus] (.split s ":" 2)
-        len (Integer. len-str)
-        ; data-plus.length >= len + 1
-        data (.substring data-plus 0 len)
-        type (.charAt data-plus len)
-        remains (.substring data-plus (+ len 1))]
-    [data type remains]))
+  (if (or (neg? (.indexOf s (int \:))) (zero? (.length s)))
+    [:SHORTCOUNT :SHORTCOUNT s]
+    (try
+      (let [[len-str data-plus] (.split s ":" 2)
+            len (Integer. len-str)]
+        (if (or (neg? len) (> (+ len 1) (.length data-plus)))
+          [:SHORTCOUNT :SHORTCOUNT s]
+          (let
+              [data (.substring data-plus 0 len)
+               type (.charAt data-plus len)
+               remains (.substring data-plus (+ len 1))]
+            [data type remains])))
+      (catch java.lang.NumberFormatException e
+        [:INVALID :INVALID s]))))
+
+(defn- invalid-or-short? [ & rest ]
+  (not (not-any? (fn [x] (or (= x :INVALID) (= x :SHORTCOUNT))) rest)))
 
 ;; prototyping for the benefit of load-list and load-map
 (defn- load-item [data type] nil)
@@ -26,7 +36,7 @@
 (defn- load-bool [data]
   (cond (= data "true") true
         (= data "false") false
-        :else :NOTMATCHED))
+        :else :INVALID))
 
 (defn- load-list [data]
   (loop [data data accum []]
@@ -34,9 +44,9 @@
       (reverse accum)
       (let [[data type remains] (explode-tnetstring data)
             item (load-item data type)]
-        (if (= item :NOTMATCHED)
-          :NOTMATCHED
-          (recur remains (cons (load-item data type) accum)))))))
+        (if (invalid-or-short? item)
+          :INVALID ; shortcounts cannot happen inside of valid lists
+          (recur remains (cons item accum)))))))
 
 (defn- load-map [data]
   (loop [data data accum {}]
@@ -46,19 +56,20 @@
             [vdata vtype remains] (explode-tnetstring val-plus)
             key (load-item kdata ktype)
             val (load-item vdata vtype)]
-        (if (or (= key :NOTMATCHED) (= val :NOTMATCHED))
-          :NOTMATCHED
+        (if (invalid-or-short? key val)
+          :INVALID ; shortcounts cannot happen inside of valid maps
           (recur remains (assoc accum key val)))))))
     
 (defn- load-item [data type]
   (let [tis (fn [t] (= type t))] ; Abbreviating (= type t) to (tis t)
-    (cond (tis \~) nil               ; Null
-          (tis \,) (load-str data)   ; String
-          (tis \#) (load-int data)   ; Integer
-          (tis \!) (load-bool data)  ; Boolean
-          (tis \]) (load-list data)  ; List
-          (tis \}) (load-map data)   ; Map
-          :else :NOTMATCHED)))
+    (cond (tis \~) nil                  ; Null
+          (tis \,) (load-str data)      ; String
+          (tis \#) (load-int data)      ; Integer
+          (tis \!) (load-bool data)     ; Boolean
+          (tis \]) (load-list data)     ; List
+          (tis \}) (load-map data)      ; Map
+          (tis :SHORTCOUNT) :SHORTCOUNT ; Short Count
+          :else :INVALID)))
 
 ;;; Helper functions for dumps
 
@@ -98,7 +109,7 @@
         (boolean? item) (dump-bool item)    ; Boolean
         (list? item) (dump-list item)       ; List
         (map? item) (dump-map item)         ; Map
-        :else :NOTMATCHED))
+        :else :INVALID))
 
 
 ;;; Public Functions

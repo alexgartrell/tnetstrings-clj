@@ -37,12 +37,17 @@
     (is (= "25:3:foo,3:bar,3:biz,4:bang,}"
            (dumps {"foo" "bar" "biz" "bang"})))))
 
-;; This needs a lot of work, both here and in the actual core, we pretty much
-;; puke whenever something has a bad prefix length
 (deftest malformed-loads
-  (is (= :NOTMATCHED (loads "3:foo!")))
-  (is (= :NOTMATCHED (loads "6:3:foo!]")))
-  (is (= :NOTMATCHED (loads "10:1:1#3:foo!]"))))
+  (is (= :INVALID (loads "3:foo!")))
+  (is (= :INVALID (loads "6:3:foo!]")))
+  (is (= :INVALID (loads "10:1:1#3:foo!]")))
+  (is (= :INVALID (loads "4:10:aa]")))
+  (is (= :INVALID (loads "foo:"))))
+
+(deftest shortcount-loads
+  (is (= :SHORTCOUNT (loads "10:aaaaaaaaaa")))
+  (is (= :SHORTCOUNT (loads "1")))
+  (is (= :SHORTCOUNT (loads ""))))
 
 (defn roundtrip-item [item]
   (is (= item (loads (dumps item)))))
