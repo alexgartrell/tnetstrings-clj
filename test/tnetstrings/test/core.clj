@@ -42,7 +42,9 @@
   (is (= :INVALID (loads "6:3:foo!]")))
   (is (= :INVALID (loads "10:1:1#3:foo!]")))
   (is (= :INVALID (loads "4:10:aa]")))
-  (is (= :INVALID (loads "foo:"))))
+  (is (= :INVALID (loads "foo:")))
+  (is (= :INVALID (loads "3:foo#")))
+  (is (= :INVALID (loads "6:3:foo#]"))))
 
 (deftest shortcount-loads
   (is (= :SHORTCOUNT (loads "10:aaaaaaaaaa")))
