@@ -31,7 +31,9 @@
   data)
 
 (defn- load-int [data]
-  (Integer. data))
+  (try
+    (Integer. data)
+    (catch java.lang.NumberFormatException e :INVALID)))
 
 (defn- load-bool [data]
   (cond (= data "true") true
