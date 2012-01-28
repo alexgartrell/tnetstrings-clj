@@ -110,6 +110,8 @@
         (integer? item) (dump-int item)        ; Integer
         (boolean? item) (dump-bool item)       ; Boolean
         (list? item)    (dump-list item)       ; List
+        (vector? item)  (dump-list item)       ; Vector
+        (set? item)     (dump-list item)       ; Set
         (map? item)     (dump-map item)        ; Map
         (keyword? item) (dump-str (name item)) ; Keyword
         :else :INVALID))
