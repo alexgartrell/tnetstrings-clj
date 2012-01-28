@@ -105,12 +105,13 @@
 (defn- boolean? [x] (or (= true x) (= false x)))
 
 (defn- dump-item [item]
-  (cond (nil? item) "0:~"                   ; Null
-        (string? item) (dump-str item)      ; String
-        (integer? item) (dump-int item)     ; Integer
-        (boolean? item) (dump-bool item)    ; Boolean
-        (list? item) (dump-list item)       ; List
-        (map? item) (dump-map item)         ; Map
+  (cond (nil? item)     "0:~"                  ; Null
+        (string? item)  (dump-str item)        ; String
+        (integer? item) (dump-int item)        ; Integer
+        (boolean? item) (dump-bool item)       ; Boolean
+        (list? item)    (dump-list item)       ; List
+        (map? item)     (dump-map item)        ; Map
+        (keyword? item) (dump-str (name item)) ; Keyword
         :else :INVALID))
 
 
